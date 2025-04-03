@@ -1,3 +1,7 @@
+# Ignore Python bytecode files
+*.pyc
+__pycache__/
+
 .venv
 *.zip
 *.csv
