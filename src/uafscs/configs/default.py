@@ -12,7 +12,6 @@ DEFAULTS = {
 	"batch_size":		128,
 	"dropout":			0.4,
 	"num_labels":		2,
-    "optim":             None,
 }
 
 

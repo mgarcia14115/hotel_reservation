@@ -18,7 +18,8 @@ class MGModel(torch.nn.Module):
         
         
     def forward(self,x):
-
+        x = x.float()
+        
         out = self.body(x)
 
         out = self.head(out)
