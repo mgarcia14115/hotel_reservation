@@ -15,6 +15,7 @@ class MGTrainer:
                 epochs              = None,
                 loss_fn             = None,
                 train_loader        = None,
+                val_loader          = None,
                 test_loader         = None,
                 **kwargs
                 ):
@@ -25,6 +26,7 @@ class MGTrainer:
         self.epochs       = epochs
         self.loss_fn      = loss_fn
         self.train_loader = train_loader
+        self.val_loader   = val_loader
         self.test_loader  = test_loader
         self.optim        = optim
         self.device       = config.DEVICE
@@ -32,13 +34,13 @@ class MGTrainer:
         if optim == None:
             self.optim = torch.optim.Adam(self.model.parameters(),lr = self.lr)
 
-        elif optim == "adam":
+        elif optim.lower() == "adam":
             
             if weight_decay == None:
                 self.optim = torch.optim.Adam(self.model.parameters(),lr = self.lr)
             else:
                 self.optim = torch.optim.Adam(self.model.parameters(),lr = self.lr, weight_decay = self.weight_decay)
-        elif optim == "adamw":
+        elif optim.lower() == "adamw":
 
             if weight_decay == None:
                 self.optim = torch.optim.AdamW(self.model.parameters(),lr = self.lr)
@@ -57,7 +59,7 @@ class MGTrainer:
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         best_vloss = 10
-        target_names = ['Class 0', 'Class 1']
+        target_names = ['Canceled','Not_Canceled']
         for epoch in range(self.epochs):
 
             y_true  = []
@@ -67,7 +69,42 @@ class MGTrainer:
             yv_pred = []
             loss_per_epoch = 0
             self.model.train()
-            for batch in tqdm(self.train_loader):
+
+            y_true,y_pred,loss_per_epoch = self.train_one_epoch(y_true,y_pred,loss_per_epoch)
+            
+            running_vloss = 0           
+            self.model.eval()
+            with torch.no_grad():
+                for batch in tqdm(self.val_loader):
+                    vinputs , vlabels = batch
+                    vinputs = vinputs.to(self.device)
+                    vlabels = vlabels.to(self.device)
+
+                    predictions = self.model(vinputs)
+                    _,pred        = torch.max(predictions,1)
+                    
+                    vloss = self.loss_fn(predictions,vlabels)
+                    yv_true.extend(vlabels.detach().cpu().tolist())
+                    yv_pred.extend(pred.detach().cpu().tolist())
+                    running_vloss += vloss.item()
+
+                    
+            print(f"Epoch: {epoch + 1}    Training Loss: {loss_per_epoch}  ")
+
+            print(classification_report(y_true=y_true,y_pred=y_pred,zero_division=0.0,target_names=target_names))
+
+            print(f"\n\nValidation Loss: {running_vloss}       ")
+
+            print(classification_report(y_true=yv_true,y_pred=yv_pred,zero_division=0.0,target_names=target_names))
+
+            if running_vloss < best_vloss:
+                best_vloss = running_vloss
+                model_pth  = f'model_{timestamp}_{epoch+1}'
+                torch.save(self.model.state_dict(),model_pth)
+
+    def train_one_epoch(self,y_true,y_pred,loss_per_epoch):
+
+        for batch in tqdm(self.train_loader):
                 self.optim.zero_grad()
 
                 inputs,labels = batch
@@ -82,38 +119,37 @@ class MGTrainer:
                 y_true.extend(labels.detach().cpu().numpy())
                 y_pred.extend(pred.detach().cpu().numpy())
                 loss_per_epoch += loss.item()
-            
-            running_vloss = 0           
-            self.model.eval()
-            with torch.no_grad():
-                for batch in tqdm(self.test_loader):
-                    vinputs , vlabels = batch
-                    vinputs = vinputs.to(self.device)
-                    vlabels = vlabels.to(self.device)
 
-                    predictions = self.model(vinputs)
-                    _,pred        = torch.max(predictions,1)
-                    
-                    vloss = self.loss_fn(predictions,vlabels)
-                    yv_true.extend(vlabels.detach().cpu().tolist())
-                    yv_pred.extend(pred.detach().cpu().tolist())
-                    running_vloss += vloss.item()
+        return y_true,y_pred,loss_per_epoch
 
-                    
-            print(f"Epoch: {epoch + 1}    Training Loss: {loss_per_epoch}  Validation Loss: {running_vloss}")
 
-            print(classification_report(y_true=y_true,y_pred=y_pred,zero_division=0.0,target_names=target_names))
+    def eval(self):
 
-            print(f"##########################################################################")
+        y_true = []
+        y_pred = []
+        running_loss = 0
+        target_names = ['Canceled','Not_Canceled']
+        with torch.no_grad():
 
-            print(classification_report(y_true=yv_true,y_pred=yv_pred,zero_division=0.0,target_names=target_names))
+            for batch in tqdm(self.test_loader):
 
-            if running_vloss < best_vloss:
-                best_vloss = running_vloss
-                model_pth  = 'model_{}_{}'.format(timestamp,epoch+1)
-                torch.save(self.model.state_dict(),model_pth)
+                inputs,labels = batch
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
 
-                 
+                predictions = self.model(inputs)
+
+                loss = self.loss_fn(predictions,labels)
+
+                running_loss += loss.item()
+
+                _,pred = torch.max(predictions,1)
+
+                y_true.extend(labels.detach().cpu().tolist())
+                y_pred.extend(pred.detach().cpu().tolist())
+
+            print(f"Testing Loss: {running_loss}")
+            print(classification_report(y_true,y_pred,zero_division=0.0,target_names=target_names))         
 
             
         

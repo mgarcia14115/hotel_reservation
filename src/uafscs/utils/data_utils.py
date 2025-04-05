@@ -13,6 +13,7 @@ class MGDataset(torch.utils.data.Dataset):
         df = pd.read_csv(data_pth).drop(labels=["Booking_ID","arrival_year","arrival_date"],axis=1)
         le = LabelEncoder()      
         y = torch.tensor(le.fit_transform(df["booking_status"]))
+   
         df = df.drop(labels=["booking_status"],axis=1)
         encoded_data = pd.get_dummies(df,dtype=int)
         cols = [col for col in encoded_data.columns if encoded_data.describe().loc["max",col] > 1]
