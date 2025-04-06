@@ -6,5 +6,6 @@ __pycache__/
 *.zip
 *.csv
 
-!local/deleteme.txt
+
 local/*
+!local/deleteme.txt
