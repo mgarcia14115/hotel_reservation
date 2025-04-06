@@ -5,3 +5,6 @@ __pycache__/
 .venv
 *.zip
 *.csv
+
+!local/deletme.txt
+local/*
