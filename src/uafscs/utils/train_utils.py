@@ -80,6 +80,8 @@ class MGTrainer:
                     vinputs = vinputs.to(self.device)
                     vlabels = vlabels.to(self.device)
 
+                    
+
                     predictions = self.model(vinputs)
                     _,pred        = torch.max(predictions,1)
                     
@@ -89,11 +91,11 @@ class MGTrainer:
                     running_vloss += vloss.item()
 
                     
-            print(f"Epoch: {epoch + 1}    Training Loss: {loss_per_epoch}  ")
+            print(f"Epoch: {epoch + 1}    Training Loss: {round(loss_per_epoch,3)}  ")
 
             print(classification_report(y_true=y_true,y_pred=y_pred,zero_division=0.0,target_names=target_names))
 
-            print(f"\n\nValidation Loss: {running_vloss}       ")
+            print(f"\n\nValidation Loss: {round(running_vloss,3)}       ")
 
             print(classification_report(y_true=yv_true,y_pred=yv_pred,zero_division=0.0,target_names=target_names))
 
@@ -110,7 +112,7 @@ class MGTrainer:
                 inputs,labels = batch
                 inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
-
+                
                 predictions = self.model(inputs)
                 _,pred        = torch.max(predictions,1)
                 loss        = self.loss_fn(predictions,labels)
