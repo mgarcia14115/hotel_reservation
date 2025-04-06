@@ -1,5 +1,6 @@
 from configs import default as config
 import torch
+import os
 from tqdm import tqdm
 from datetime import datetime
 from sklearn.metrics import classification_report
@@ -31,23 +32,21 @@ class MGTrainer:
         self.optim        = optim
         self.device       = config.DEVICE
 
-        if optim == None:
-            self.optim = torch.optim.Adam(self.model.parameters(),lr = self.lr)
 
-        elif optim.lower() == "adam":
+        if optim.lower() == "adam":
             
             if weight_decay == None:
                 self.optim = torch.optim.Adam(self.model.parameters(),lr = self.lr)
             else:
                 self.optim = torch.optim.Adam(self.model.parameters(),lr = self.lr, weight_decay = self.weight_decay)
-        elif optim.lower() == "adamw":
+        if optim.lower() == "adamw":
 
             if weight_decay == None:
                 self.optim = torch.optim.AdamW(self.model.parameters(),lr = self.lr)
             else:
                 self.optim = torch.optim.AdamW(self.model.parameters(),lr = self.lr, weight_decay = self.weight_decay)
 
-        else:
+        if optim.lower() == "sgd":
 
             if weight_decay == None:
                 self.optim = torch.optim.SGD(self.model.parameters(),lr = self.lr)
@@ -101,8 +100,9 @@ class MGTrainer:
 
             if running_vloss < best_vloss:
                 best_vloss = running_vloss
-                model_pth  = f'model_{timestamp}_{epoch+1}'
-                torch.save(self.model.state_dict(),model_pth)
+                dir_pth    ='../../local/'
+                model_pth  = f'model_{timestamp}_{epoch+1}.pt'
+                torch.save(self.model.state_dict(),os.path.join(dir_pth,model_pth))
 
     def train_one_epoch(self,y_true,y_pred,loss_per_epoch):
 

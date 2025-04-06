@@ -11,6 +11,7 @@ DEFAULTS = {
 	"epochs":			7,
 	"batch_size":		128,
 	"dropout":			0.4,
+    "input_dims":       28,
 	"num_labels":		2,
 }
 

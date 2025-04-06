@@ -43,8 +43,8 @@ class MGDataset(torch.utils.data.Dataset):
     
     def __getitem__(self,idx):
         return self.x[idx],self.y[idx]
+    
     def get_cols(self):
-
         dir = os.listdir("utils/scalers/")
         cols = []
         for file in dir:
